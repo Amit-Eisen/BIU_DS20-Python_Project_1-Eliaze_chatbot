@@ -1,134 +1,86 @@
-import re
-import random
 import streamlit as st
-from collections import Counter, defaultdict
+from main import get_response, get_conversation_stats
 
-from comprehensive_rules import rules, default_responses, context_responses
+# --- App Config ---
+st.set_page_config(page_title="ELIZA Chatbot", page_icon="🧠", layout="centered")
+st.markdown("<h1 style='text-align: center;'>🧠 ELIZA - Psychotherapist Bot</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>A modern remake of the classic 1960s chatbot</p>", unsafe_allow_html=True)
+st.markdown("---")
 
-# Substitution map to reflect user input
-substitutions = {
-    "i": "you",
-    "you": "I",
-    "me": "you",
-    "my": "your",
-    "your": "my",
-    "am": "are",
-    "are": "am",
-    "myself": "yourself",
-    "yourself": "myself"
-}
+# --- Init session state ---
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-def apply_substitutions(text: str) -> str:
-    # Swap common pronouns to mimic conversation
-    words = re.findall(r"\b\w+\b", text.lower())
-    return " ".join([substitutions.get(word, word) for word in words])
+# --- Chat Input ---
+with st.form("chat_form", clear_on_submit=True):
+    user_input = st.text_input("💬 You:", placeholder="Type your message here...", label_visibility="collapsed")
+    submitted = st.form_submit_button("Send")
 
-def extract_topics_from_history():
-    # Get important topics from what the user said
-    if "conversation_history" not in st.session_state:
-        return []
+if submitted and user_input.strip():
+    response = get_response(user_input)
+    # Don't duplicate - the engine handles conversation history
+    st.session_state.history.append(("user", user_input))
+    st.session_state.history.append(("eliza", response))
 
-    topics = []
-    important_keywords = ['mother', 'father', 'family', 'work', 'school', 'friend',
-                          'sad', 'happy', 'angry', 'depressed', 'anxious', 'problem', 'stress']
-
-    for sender, message in st.session_state.conversation_history:
-        if sender == "user":
-            msg = message.lower()
-            for keyword in important_keywords:
-                if keyword in msg:
-                    topics.append(keyword)
-
-    counts = Counter(topics)
-    return [topic for topic, count in counts.most_common(3)]
-
-def should_use_context_response():
-    # Decide randomly (sometimes) to respond based on topic
-    if "conversation_history" not in st.session_state:
-        return False
-    return len(st.session_state.conversation_history) > 8 and random.random() < 0.2
-
-def get_context_response():
-    # Return a response based on previously mentioned topic
-    topics = extract_topics_from_history()
-    if topics:
-        topic = random.choice(topics)
-        template = random.choice(context_responses)
-        return template.format(topic=topic)
-    return None
-
-def get_response(user_input: str) -> str:
-    user_input_clean = user_input.lower().strip()
-
-    if "conversation_history" not in st.session_state:
-        st.session_state.conversation_history = []
-    if "used_responses" not in st.session_state:
-        st.session_state.used_responses = defaultdict(int)
-
-    # Occasionally use context-aware response
-    if should_use_context_response():
-        context_resp = get_context_response()
-        if context_resp:
-            return context_resp
-
-    sorted_keywords = sorted(rules.items(), key=lambda x: -x[1]["rank"])
-
-    for keyword, data in sorted_keywords:
-        if keyword in user_input_clean:
-            for rule in data["decompositions"]:
-                match = re.search(rule["pattern"], user_input_clean)
-                if match:
-                    fragments = match.groups()
-                    substituted = [apply_substitutions(f) for f in fragments]
-
-                    # Try to avoid repeating the same responses
-                    options = rule["reassembly"]
-                    weights = []
-
-                    for template in options:
-                        count = st.session_state.used_responses[template]
-                        weights.append(max(1, 5 - count))
-
-                    template = random.choices(options, weights=weights)[0]
-
-                    try:
-                        response = template.format(*substituted)
-                        st.session_state.used_responses[template] += 1
-
-                        # Occasionally reset memory so answers can be reused
-                        if len(st.session_state.used_responses) > 50:
-                            for key in list(st.session_state.used_responses.keys()):
-                                st.session_state.used_responses[key] = max(0, st.session_state.used_responses[key] - 1)
-
-                        st.session_state.conversation_history.append(("user", user_input))
-                        st.session_state.conversation_history.append(("eliza", response))
-                        return response
-                    except Exception:
-                        continue
-
-    # No match – fallback
-    defaults = default_responses
-    weights = []
-    for resp in defaults:
-        count = st.session_state.used_responses[resp]
-        weights.append(max(1, 5 - count))
-
-    fallback = random.choices(defaults, weights=weights)[0]
-    st.session_state.used_responses[fallback] += 1
-
-    st.session_state.conversation_history.append(("user", user_input))
-    st.session_state.conversation_history.append(("eliza", fallback))
-    return fallback
-
-def get_conversation_stats():
-    # Just count how many turns and what topics came up
-    if "conversation_history" not in st.session_state:
-        return {"total_exchanges": 0, "topics": []}
-
-    total = len([msg for sender, msg in st.session_state.conversation_history if sender == "user"])
-    topics = extract_topics_from_history()
-
-    return {
-        "total_exchanges": total,
-        "topics": topics
+# --- Display Chat Messages ---
+if st.session_state.history:
+    # Add CSS to remove ALL Streamlit backgrounds and borders
+    st.markdown("""
+    <style>
+    .stMarkdown > div {
+        background-color: transparent !important;
+        border: none !important;
     }
+    .main .block-container {
+        background-color: transparent !important;
+    }
+    .element-container {
+        background-color: transparent !important;
+    }
+    div[data-testid="stMarkdownContainer"] {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 💬 Chat")
+
+    for sender, msg in st.session_state.history:
+        if sender == "user":
+            st.markdown(
+                f"""
+                <div style='display: flex; justify-content: flex-end; margin-bottom: 15px; width: 100%;'>
+                    <div style='background-color: #dcf8c6; padding: 12px 16px; border-radius: 18px; 
+                    max-width: 70%; word-wrap: break-word; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>{msg}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f"""
+                <div style='display: flex; justify-content: flex-start; margin-bottom: 15px; width: 100%;'>
+                    <div style='background-color: #f1f1f1; padding: 12px 16px; border-radius: 18px; 
+                    max-width: 70%; word-wrap: break-word;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>{msg}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+else:
+    st.info("👋 Start the conversation by typing a message above!")
+
+# --- Clear Chat Button ---
+if st.session_state.history:
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🗑️ Clear Chat", use_container_width=True):
+            st.session_state.history = []
+            # Also clear the engine's conversation history
+            if "conversation_history" in st.session_state:
+                st.session_state.conversation_history = []
+            if "used_responses" in st.session_state:
+                st.session_state.used_responses = {}
+            st.rerun()

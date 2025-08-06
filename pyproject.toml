@@ -1,0 +1,17 @@
+[project]
+name = "eliza-chatbot-project"
+version = "0.1.0"
+description = "ELIZA-style chatbot with Streamlit"
+authors = [
+    {name = "Amit Eisen", email = "youremail@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.48.0",
+    "nltk>=3.8.1",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

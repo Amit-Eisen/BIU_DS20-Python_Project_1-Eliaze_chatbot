@@ -28,35 +28,39 @@ It simulates human-like conversation using pattern-matching and keyword decompos
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/yourusername/eliza-chatbot.git
-   cd eliza-chatbot
+   git clone https://github.com/Amit-Eisen/BIU_DS20-Python_Project_1-Eliaze_chatbot.git
+   cd BIU_DS20-Python_Project_1-Eliaze_chatbot
    ```
    
-2. **Install dependencies**
+2. **Install Poetry**
 
     ```bash
-   pip install -r requirements.txt
+   pip install poetry
     ```
    
-3. **Run the app**
+3. **Install environment & dependencies:**
 
     ```bash
-    streamlit run streamlit_app.py
+    poetry install
     ```
+4. **Run the app with Poetry:
    
+   ```bash
+   poetry run streamlit run main.py
+   ```
+
+
 ## 🗂️ Project Structure
 
 <pre lang="markdown">
 📁 Eliza chatbot 
-├── streamlit_app.py          # UI using Streamlit 
-├── main.py	          # Logic engine 
+├── main.py                   # UI using Streamlit 
+├── eliza_engine.py	          # Logic engine 
 ├── comprehensive_rules.py    # Full ELIZA ruleset 
-├── requirements.txt          # Dependencies 
+├── poetry.lock               # Poetry project file 
+├── poetry.lock               # Poetry lock file
 └── README.md                 # You're reading it 
 </pre>
-
-## 📄 Requirements
-    streamlit
 
 ## 📢 Notes
 

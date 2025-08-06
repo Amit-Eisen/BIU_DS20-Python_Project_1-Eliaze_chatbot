@@ -1,5 +1,5 @@
 import streamlit as st
-from main import get_response, get_conversation_stats
+from eliza_engine import get_response
 
 # --- App Config ---
 st.set_page_config(page_title="ELIZA Chatbot", page_icon="🧠", layout="centered")

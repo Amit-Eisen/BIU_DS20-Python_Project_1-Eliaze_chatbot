@@ -49,7 +49,7 @@ It simulates human-like conversation using pattern-matching and keyword decompos
 <pre lang="markdown">
 📁 Eliza chatbot 
 ├── streamlit_app.py          # UI using Streamlit 
-├── eliza_engine.py	          # Logic engine 
+├── main.py	          # Logic engine 
 ├── comprehensive_rules.py    # Full ELIZA ruleset 
 ├── requirements.txt          # Dependencies 
 └── README.md                 # You're reading it 
